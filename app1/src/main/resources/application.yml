@@ -1,0 +1,52 @@
+server:
+  port: 8080
+
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException$BadRequest
+    instances:
+      serviceA:
+        registerHealthIndicator: true
+        eventConsumerBufferSize: 10
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        slidingWindowType: COUNT_BASED
+        excludedStatusCodes: 400-499
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException$BadRequest
+        fallbackDecorators:
+          - fallbackDecorators:
+              - predicate: excludedResponseStatuses
+                fallbackMethod: null
+  retry:
+    instances:
+      serviceA:
+        registerHealthIndicator: true
+        maxRetryAttempts: 5
+        waitDuration: 10s
+  ratelimiter:
+    instances:
+      serviceA:
+        registerHealthIndicator: false
+        limitForPeriod: 10
+        limitRefreshPeriod: 10s
+        timeoutDuration: 3s
